@@ -1,19 +1,15 @@
-import React from 'react';
+import css from './Button.module.css';
 import PropTypes from 'prop-types';
-import styles from './Button.module.css';
 
-export default function Button({ onLeaveFeedback }) {
+
+export const Button = ({ loadMore }) => {
     return (
-        <button
-            type="button"
-            className={styles.Button}
-            onClick={() => onLeaveFeedback()}
-        >
-            Load more ...
+        <button className={css.btn_loadMore} type="button" onClick={loadMore}>
+            Load more
         </button>
     );
-}
+};
 
 Button.propTypes = {
-    onLeaveFeedback: PropTypes.func.isRequired,
+    loadMore: PropTypes.func.isRequired,
 };

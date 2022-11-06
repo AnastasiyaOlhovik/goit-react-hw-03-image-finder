@@ -1,19 +1,14 @@
-const DATA_URL = 'https://pixabay.com/api/';
-const API_KEY = '29499113-43da6bfb9ce26b9bb71689aa3';
-const IMG_TYPE = 'photo';
-const IMG_ORIENT = 'horizontal';
-const PER_PAGE = 12;
+import axios from 'axios';
 
-export default async function GetList(query, page) {
-    try {
-        const url = `${DATA_URL}?image_type=${IMG_TYPE}&orientation=${IMG_ORIENT}&q=${query}&page=${page}&per_page=${PER_PAGE}&key=${API_KEY}`;
+export const pixabayApi = async (searchValue, page) => {
+    const responce = await axios.get('https://pixabay.com/api/', {
+        params: {
+            key: '29499113-43da6bfb9ce26b9bb71689aa3',
+            q: searchValue,
+            per_page: 12,
+            page: page,
+        },
+    });
 
-        const response = await fetch(url); // получаем ответ от сервера
-        const data = await response.json(); // преобразуем в JSON
-
-        return data; // возвращаем полученные данные
-    } catch (error) {
-        // или ругаемся
-        return Promise.reject(new Error('Nothing found'));
-    }
-}
+    return responce.data;
+};

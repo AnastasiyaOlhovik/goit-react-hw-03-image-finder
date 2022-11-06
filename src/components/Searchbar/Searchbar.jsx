@@ -1,51 +1,56 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import styles from './Searchbar.module.css';
-import { toast } from 'react-toastify';
+import { FaSearchMinus } from 'react-icons/fa';
+import css from './Searchbar.module.css';
+import toast, { Toaster } from 'react-hot-toast';
 
-export default class Searchbar extends Component {
+
+export class SearchBar extends Component {
     state = {
-        query: '',
+        value: '',
+        page: 1,
     };
 
-    handleChange = event => {
-        // отображалка для поля ввода
-        this.setState({ query: event.currentTarget.value.toLowerCase() });
+    handlerInputName = e => {
+        this.setState({ value: e.target.value.toLowerCase() });
     };
 
-    handleSubmit = event => {
-        const { query } = this.state;
-        event.preventDefault();
-        // если пустышка - ругаемся
-        if (query.trim() === '') {
-            toast.error('Please, enter search query.');
+    handlerSubmitForm = e => {
+        e.preventDefault();
+        if (this.state.value.trim() === '') {
+            toast.error('Type something', {
+                position: 'top-right',
+            });
             return;
         }
-        this.props.onSubmit(query);
-        // this.setState({ query: '' });
+        this.props.onSubmit(this.state);
+        this.reset();
     };
 
+    reset = () => {
+        this.setState({ value: '' });
+    };
     render() {
+        const { value } = this.state;
+
         return (
-            <header className={styles.Searchbar}>
-                <form onSubmit={this.handleSubmit} className={styles.SearchForm}>
-                    <button type="submit" className={styles.SearchFormButton}>
-                        <span className={styles.SearchFormButtonText}>Search</span>
+            <header className={css.Searchbar}>
+                <form className={css.search_form} onSubmit={this.handlerSubmitForm}>
+                    <button type="submit" className={css.searchForm_button}>
+                        <FaSearchMinus />
                     </button>
 
                     <input
-                        className={styles.SearchFormInput}
+                        className={css.SearchForm_input}
                         type="text"
+                        autoComplete="off"
+                        autoFocus
                         placeholder="Search images and photos"
-                        value={this.state.query}
-                        onChange={this.handleChange}
+                        value={value}
+                        onChange={this.handlerInputName}
                     />
+                    <Toaster />
                 </form>
             </header>
         );
     }
 }
-
-Searchbar.propTypes = {
-    onSubmit: PropTypes.func.isRequired,
-};
