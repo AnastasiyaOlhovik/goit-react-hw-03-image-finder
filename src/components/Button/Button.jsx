@@ -1,15 +1,14 @@
 import css from './Button.module.css';
 import PropTypes from 'prop-types';
 
-
-export const Button = ({ loadMore }) => {
+export default function Button({ nextPage }) {
     return (
-        <button className={css.btn_loadMore} type="button" onClick={loadMore}>
+        <button type="button" className={css.Button} onClick={nextPage}>
             Load more
         </button>
     );
-};
+}
 
 Button.propTypes = {
-    loadMore: PropTypes.func.isRequired,
+    nextPage: PropTypes.func.isRequired,
 };

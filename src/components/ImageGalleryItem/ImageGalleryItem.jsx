@@ -1,14 +1,21 @@
 import css from './ImageGalleryItem.module.css';
+import PropTypes from 'prop-types';
 
-export const ImageGalleryItem = ({ img, tags, clickModal, imgModal }) => {
+export default function ImageGalleryItem({ webformatURL, index, openModal }) {
     return (
-        <li onClick={clickModal}>
+        <li className={css.ImageGalleryItem}>
             <img
-                src={img}
-                alt={tags}
-                className={css.ImageGalleryItem_image}
-                data-src={imgModal}
+                className={css.ImageGalleryItem__image}
+                src={webformatURL}
+                onClick={() => openModal(index)}
+                alt=""
             />
         </li>
     );
+}
+
+ImageGalleryItem.propTypes = {
+    index: PropTypes.number.isRequired,
+    webformatURL: PropTypes.string.isRequired,
+    openModal: PropTypes.func.isRequired,
 };

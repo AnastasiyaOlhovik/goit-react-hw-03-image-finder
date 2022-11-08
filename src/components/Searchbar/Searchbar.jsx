@@ -1,54 +1,44 @@
-import React, { Component } from 'react';
-import { FaSearchMinus } from 'react-icons/fa';
+import { Component } from 'react';
 import css from './Searchbar.module.css';
-import toast, { Toaster } from 'react-hot-toast';
+import PropTypes from 'prop-types';
 
-
-export class SearchBar extends Component {
+export default class Searchbar extends Component {
     state = {
-        value: '',
-        page: 1,
+        searchData: '',
     };
 
-    handlerInputName = e => {
-        this.setState({ value: e.target.value.toLowerCase() });
+    static propTypes = {
+        onSubmit: PropTypes.func.isRequired,
     };
 
-    handlerSubmitForm = e => {
+    handleSubmit = e => {
         e.preventDefault();
-        if (this.state.value.trim() === '') {
-            toast.error('Type something', {
-                position: 'top-right',
-            });
-            return;
-        }
-        this.props.onSubmit(this.state);
-        this.reset();
+        this.props.onSubmit(this.state.searchData);
     };
 
-    reset = () => {
-        this.setState({ value: '' });
+    handleChange = evt => {
+        const { value } = evt.target;
+        this.setState({ searchData: value });
     };
+
     render() {
-        const { value } = this.state;
+        const { handleChange, handleSubmit } = this;
 
         return (
             <header className={css.Searchbar}>
-                <form className={css.search_form} onSubmit={this.handlerSubmitForm}>
-                    <button type="submit" className={css.searchForm_button}>
-                        <FaSearchMinus />
+                <form className={css.SearchForm} onSubmit={handleSubmit}>
+                    <button type="submit" className={css.SearchForm__button}>
+                        <span className={css.SearchForm__button__label}>Search</span>
                     </button>
 
                     <input
-                        className={css.SearchForm_input}
+                        className={css.SearchForm__input}
                         type="text"
                         autoComplete="off"
                         autoFocus
                         placeholder="Search images and photos"
-                        value={value}
-                        onChange={this.handlerInputName}
+                        onChange={handleChange}
                     />
-                    <Toaster />
                 </form>
             </header>
         );

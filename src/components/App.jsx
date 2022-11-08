@@ -1,146 +1,96 @@
-import React, { Component } from 'react';
-import toast from 'react-hot-toast';
-
-import { pixabayApi } from './api';
-
-import { SearchBar } from './Searchbar/Searchbar';
-import { ImageGallery } from './ImageGallery/ImageGallery';
-import { Modal } from './Modal/Modal';
+import Searchbar from './Searchbar/Searchbar';
+import ImageGallery from './ImageGallery/ImageGallery';
+import fetchPictures from './api';
+import Modal from './Modal/Modal';
 import { Loader } from './Loader/Loader';
-import { Button } from './Button/Button';
-import { ErrorUser } from './ErrorSearch/ErrorSearch';
-
+import Button from './Button/Button';
 import css from './App.module.css';
+import { Component } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export class App extends Component {
   state = {
-    array: [],
-    searchValue: '',
-    modalImgSrc: '',
+    searchData: '',
+    images: [],
+    page: 0,
+    largeImage: '',
     showModal: false,
-    page: 1,
-    status: 'idle',
-    hidden: false,
-  }
+    isLoading: false,
+    error: null,
+  };
 
-  async componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.searchValue !== this.state.searchValue ||
-      prevState.page !== this.state.page
-    ) {
+  componentDidUpdate(prevProps, prevState) {
+    const prevPage = prevState.page;
+    const prevSearchData = prevState.searchData;
+    const { searchData, page, images } = this.state;
+    if (prevPage !== page || prevSearchData !== searchData) {
       try {
-        this.setState({ status: 'pending' });
-        const arrayObj = await pixabayApi(
-          this.state.searchValue,
-          this.state.page
-        );
-
-        console.log(arrayObj);
-        if (arrayObj.hits.length > 0) {
-          this.setState(prevState => {
-            return {
-              array: [...prevState.array, ...arrayObj.hits],
-              status: 'resolved',
-            };
-          });
-        } else {
-          toast.error(
-            `Sorry, but nothing was found for your query ${this.state.searchValue}`,
-            { position: 'top-right' }
-          );
-          this.setState({ status: 'idle' });
-          return;
-        }
-
-        if (Math.round(arrayObj.totalHits / 12) < this.state.page) {
-          toast.error(
-            `We are sorry, but you have reached the end of search results`,
-            { position: 'top-right' }
-          );
-
-          this.setState({
-            hidden: false,
-          });
-        }
-
-        if (arrayObj.hits.length > 11) {
-          this.setState({
-            hidden: true,
-          });
-        }
-      } catch (error) {
-        this.setState({
-          status: 'rejected',
+        this.setState({ isLoading: true });
+        const response = fetchPictures(searchData, page);
+        response.then(data => {
+          data.data.hits.length === 0
+            ? toast.error('Nothing found')
+            : data.data.hits.forEach(({ id, webformatURL, largeImageURL }) => {
+              !images.some(image => image.id === id) &&
+                this.setState(({ images }) => ({
+                  images: [...images, { id, webformatURL, largeImageURL }],
+                }));
+            });
+          this.setState({ isLoading: false });
         });
+      } catch (error) {
+        this.setState({ error, isLoading: false });
+      } finally {
       }
     }
   }
 
-  onOpenModal = e => {
-    const imgForModal = e.target.dataset.src;
+  onSubmit = searchData => {
+    if (searchData.trim() === '') {
+      return toast.error('Enter the meaning for search');
+    } else if (searchData === this.state.searchData) {
+      return;
+    }
+    this.setState({
+      searchData: searchData,
+      page: 1,
+      images: [],
+    });
+  };
 
-    this.setState(({ showModal, modalImgSrc } ) => ({
-      modalImgSrc: imgForModal,
+  nextPage = () => {
+    this.setState(({ page }) => ({ page: page + 1 }));
+  };
+
+  openModal = index => {
+    this.setState(({ images }) => ({
       showModal: true,
-    }))
-  };
-
-  onCloseModal = () => {
-    this.setState(({ showModal, modalImgSrc }) => ({
-      modalImgSrc: '',
-      showModal: false,
+      largeImage: images[index].largeImageURL,
     }));
   };
 
-  hendlerFormSubmit = newState => {
-    if (this.state.searchValue !== newState.value) {
-      this.setState(({ searchValue, page }) => ({
-        searchValue: newState.value,
-        array: [],
-        page: 1,
-      }));
-    }
-  };
-
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-
-    if (this.state.page > 1) {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
   };
 
   render() {
-    const { searchValue, array, showModal, modalImgSrc, status, hidden } =
-      this.state;
-
-    if (status === 'rejected') {
-      return (
-        <div className={css.App}>
-          <SearchBar onSubmit={this.hendlerFormSubmit} />
-          <ErrorUser />
-        </div>
-      );
-    }
+    const { toggleModal, openModal, nextPage, onSubmit } = this;
+    const { images,  isLoading, largeImage, showModal } = this.state;
 
     return (
       <div className={css.App}>
-        <SearchBar onSubmit={this.hendlerFormSubmit} />
-        {searchValue && (
-          <ImageGallery data={array} clickModal={this.onOpenModal} />
+        <Searchbar onSubmit={onSubmit} />
+       
+        {images.length !== 0 && (
+          <ImageGallery images={images} openModal={openModal} />
         )}
-        {hidden === true && <Button loadMore={this.loadMore} />}
         {showModal && (
-          <Modal onClose={this.onCloseModal}>
-            <img src={modalImgSrc} alt="" />
-          </Modal>
+          <Modal toggleModal={toggleModal} largeImage={largeImage} />
         )}
-        {status === 'pending' && <Loader />}
+        {isLoading && <Loader />}
+        <ToastContainer autoClose={2500} />
+        {images.length >= 12 && <Button nextPage={nextPage} />}
       </div>
     );
   }
