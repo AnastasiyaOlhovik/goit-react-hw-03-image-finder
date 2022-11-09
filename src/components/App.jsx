@@ -1,97 +1,126 @@
-import Searchbar from './Searchbar/Searchbar';
-import ImageGallery from './ImageGallery/ImageGallery';
-import fetchPictures from './api';
-import Modal from './Modal/Modal';
-import { Loader } from './Loader/Loader';
-import Button from './Button/Button';
-import css from './App.module.css';
-import { Component } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { Component } from "react";
 
-export class App extends Component {
+import SearchBar from "./Searchbar/Searchbar";
+import ImageGallery from "./ImageGallery/ImageGallery";
+import Modal from "./Modal/Modal";
+import Button from "./Button/Button";
+import Spinner from "./Loader/Loader";
+
+import fetchPictures from "./api";
+
+import css from './App.module.css';
+
+class App extends Component {
   state = {
-    searchData: '',
-    images: [],
-    page: 0,
-    largeImage: '',
-    showModal: false,
+    modalContent: "",
+    searchQuery: "",
+    page: 1,
+    totalImages: 0,
+    visibleImages: [],
     isLoading: false,
-    error: null,
+    openModal: false,
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevPage = prevState.page;
-    const prevSearchData = prevState.searchData;
-    const { searchData, page, images } = this.state;
-    if (prevPage !== page || prevSearchData !== searchData) {
-      try {
-        this.setState({ isLoading: true });
-        const response = fetchPictures(searchData, page);
-        response.then(data => {
-          data.data.hits.length === 0
-            ? toast.error('Nothing found')
-            : data.data.hits.forEach(({ id, webformatURL, largeImageURL }) => {
-              !images.some(image => image.id === id) &&
-                this.setState(({ images }) => ({
-                  images: [...images, { id, webformatURL, largeImageURL }],
-                }));
-            });
-          this.setState({ isLoading: false });
-        });
-      } catch (error) {
-        this.setState({ error, isLoading: false });
-      } finally {
-      }
+
+  componentDidUpdate(prevProps, { searchQuery, page }) {
+    if (searchQuery !== this.state.searchQuery || page !== this.state.page) {
+      this.getData();
     }
+    this.handleScroll();
   }
 
-  onSubmit = searchData => {
-    if (searchData.trim() === '') {
-      return toast.error('Enter the meaning for search');
-    } else if (searchData === this.state.searchData) {
-      return;
-    }
+
+  getData = () => {
+    const { searchQuery, page } = this.state;
+    this.toggleLoading();
+
+    fetchPictures(searchQuery, page)
+      .then(({ hits, total }) => {
+        console.log(hits);
+        this.setState(({ visibleImages }) => {
+          return { visibleImages: [...visibleImages, ...hits], totalImages: total };
+        });
+      })
+      .catch((error) => console.log(error.message))
+      .finally(this.toggleLoading);
+  };
+
+
+  hadleChangeQuery = (query) => {
     this.setState({
-      searchData: searchData,
+      searchQuery: query,
       page: 1,
-      images: [],
+      visibleImages: [],
     });
   };
 
-  nextPage = () => {
-    this.setState(({ page }) => ({ page: page + 1 }));
+
+  toggleLoading = () => {
+    this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
   };
 
-  openModal = index => {
-    this.setState(({ images }) => ({
-      showModal: true,
-      largeImage: images[index].largeImageURL,
-    }));
-  };
 
   toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+    this.setState(({ openModal }) => ({ openModal: !openModal }));
   };
 
-  render() {
-    const { toggleModal, openModal, nextPage, onSubmit } = this;
-    const { images,  isLoading, largeImage, showModal } = this.state;
 
+  modalContentSet = (itemId) => {
+    const { visibleImages } = this.state;
+    const element = visibleImages.find(({ id }) => id === itemId);
+    this.setState({ modalContent: element.largeImageURL });
+  };
+
+  handleNextPage = () => {
+    this.setState(({ page }) => {
+      return {
+        page: page + 1,
+      };
+    });
+  };
+
+
+  handleScroll = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
+    });
+  };
+
+
+  render() {
+    const { visibleImages, openModal, modalContent, isLoading, totalImages } =
+      this.state;
+    const isNotLastPage = visibleImages.length !== totalImages;
+    const btnEnable = visibleImages.length > 0 && !isLoading && isNotLastPage;
     return (
       <div className={css.App}>
-        <Searchbar onSubmit={onSubmit} />
-       
-        {images.length !== 0 && (
-          <ImageGallery images={images} openModal={openModal} />
+        <SearchBar onSubmit={this.hadleChangeQuery} />
+        {visibleImages.length === 0 ? (
+          <h2>Enter your request</h2>
+        ) : (
+          <>
+            <ImageGallery
+              images={visibleImages}
+              onClick={this.toggleModal}
+              onItemClick={this.modalContentSet}
+            />
+
+            {openModal && (
+              <Modal content={modalContent} onCloseModal={this.toggleModal} />
+            )}
+            {isLoading && <Spinner />}
+
+            {btnEnable && (
+              <Button name="Load more" onPress={this.handleNextPage} />
+            )}
+          </>
         )}
-        {showModal && (
-          <Modal toggleModal={toggleModal} largeImage={largeImage} />
-        )}
-        {isLoading && <Loader />}
-        <ToastContainer autoClose={2500} />
-        {images.length >= 12 && <Button nextPage={nextPage} />}
+
       </div>
     );
   }
+
 }
+
+export default App;

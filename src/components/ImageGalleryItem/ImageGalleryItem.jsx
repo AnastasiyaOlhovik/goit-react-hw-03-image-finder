@@ -1,21 +1,32 @@
-import css from './ImageGalleryItem.module.css';
-import PropTypes from 'prop-types';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 
-export default function ImageGalleryItem({ webformatURL, index, openModal }) {
-    return (
-        <li className={css.ImageGalleryItem}>
+import css from "./ImageGalleryItem.module.css";
+
+class ImageGalleryItem extends Component {
+    static propTypes = {
+        onItemClick: PropTypes.func.isRequired,
+        id: PropTypes.number.isRequired,
+        webformatURL: PropTypes.string.isRequired,
+    };
+
+    modalContent = (id) => {
+        this.props.onItemClick(id);
+        console.log(id);
+    };
+
+
+    render() {
+        const { id, webformatURL } = this.props;
+        return (
             <img
-                className={css.ImageGalleryItem__image}
                 src={webformatURL}
-                onClick={() => openModal(index)}
                 alt=""
+                className={css.ImageGalleryItemImage}
+                onClick={() => this.modalContent(id)}
             />
-        </li>
-    );
+        );
+    }
 }
 
-ImageGalleryItem.propTypes = {
-    index: PropTypes.number.isRequired,
-    webformatURL: PropTypes.string.isRequired,
-    openModal: PropTypes.func.isRequired,
-};
+export default ImageGalleryItem;
